@@ -1,0 +1,59 @@
+﻿@inject IPersonDataService _dataService
+
+<EditForm Model="@person" OnValidSubmit="HandleOnValidSubmit">
+    <DataAnnotationsValidator/>
+    <ValidationSummary/>
+
+    <div class="form-group">
+        <label>Id</label>
+        <span>@person.Id</span>
+    </div>
+    <div class="form-group">
+        <label>First Name</label>
+        <InputText @bind-Value="person.FirstName" class="form-control"/>
+    </div>
+    <div class="form-group">
+        <label>Last Name</label>
+        <InputText @bind-Value="person.LastName" class="form-control"/>
+    </div>
+    <div class="form-group">
+        <label>Date of Birth</label>
+        <InputDate @bind-Value="person.DateOfBirth" class="form-control"/>
+    </div>
+
+    <button class="btn btn-outline-primary mt-3" type="submit">Update Person</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private bool close = false;
+
+    [Parameter]
+    public bool CloseEditForm { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<IPersonModel> OnUpdate { get; set; }
+
+    private IPersonModel person = new DisplayPersonModel();
+
+    private async Task HandleOnValidSubmit()
+    {
+        await _dataService.UpdatePerson(person);
+        //Giving the new data through EventCallback to the show People page
+        await OnUpdate.InvokeAsync(person); 
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var p = await _dataService.ReadPeople(Id);
+
+        //Going from the library model to the display model because of the validation done by the display model 
+        person.Id = p.Id;
+        person.FirstName = p.FirstName;
+        person.LastName = p.LastName;
+        person.DateOfBirth = p.DateOfBirth;
+    }
+
+}

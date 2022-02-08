@@ -1,0 +1,36 @@
+﻿@page "/createPerson"
+@inject IPersonDataService _dataService
+
+<div class="row">
+    <div class="col-md-4">
+        <EditForm Model="@person" OnValidSubmit="HandleOnValidSubmit">
+            <DataAnnotationsValidator/>
+            <ValidationSummary/>
+            <div class="form-group">
+                <label>First Name</label>
+                <InputText @bind-Value="person.FirstName" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label>Last Name</label>
+                <InputText @bind-Value="person.LastName" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label>Date of birth</label>
+                <InputDate @bind-Value="person.DateOfBirth" class="form-control" />
+            </div>
+            <button class="btn btn-outline-primary mt-4" type="submit">Create Person</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private IPersonModel person = new DisplayPersonModel();
+
+    private async Task HandleOnValidSubmit()
+    {
+        await _dataService.CreatePerson(person);
+
+        person = new DisplayPersonModel();
+    }
+
+}

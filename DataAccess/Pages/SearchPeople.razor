@@ -1,0 +1,154 @@
+﻿@page "/searchPeople"
+
+@inject IPersonDataService _dataService
+
+<div class="input-group mb-3">
+    <input type="text"
+           class="form-control"
+           placeholder="Search term"
+           aria-label="Search term"
+           aria-describedby="button-addon2"
+           @bind="_searchTerm">
+    <button class="btn btn-outline-secondary"
+            type="submit"
+            id="button-addon2"
+            @onclick="() => DisplaySearchedPeople(_searchTerm)">Search</button>
+    <button class="btn btn-outline-secondary"
+            type="submit"
+            id="button-addon3"
+            @onclick="() => OnParametersSetAsync()">Show all</button>
+</div>
+
+@if (_people == null)
+{
+    <h3>Loading...</h3>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-@tableWidth">
+            <table class="table table-striped">
+                <thead class="thead-dark">
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">First Name</th>
+                    <th scope="col">Last Name</th>
+                    <th scope="col">Date of birth</th>
+                    <th scope="col"></th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var person in _people)
+                {
+                    <tr>
+                        <th scope="row">@person.Id</th>
+                        <td>@person.FirstName</td>
+                        <td>@person.LastName</td>
+                        <td>@person.DateOfBirth</td>
+                        <td>
+                            <button class="btn btn-outline-primary"
+                                    @onclick="(() => UpdatePerson(person.Id))">Edit Person</button>
+                            <button class="btn btn-outline-danger"
+                                    @onclick="(() => HandleDeleteClick(person.Id))">Delete</button>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        @if (showEditForm)
+        {
+            <div class="col-md-4">
+                <UpdatePerson CloseEditForm="showEditForm" Id="@idToUpdate" OnUpdate="HandleOnUpdate"></UpdatePerson>
+            </div>
+        }
+    </div>
+}
+@if (showDeletePopUp)
+{
+    <div class="modal" tabindex="-1" style="display: block">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Remove person!</h5>
+                    <button type="button" 
+                            class="btn-close" 
+                            @onclick="() => showDeletePopUp = false" 
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure that you want to remove @personToDelete?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" 
+                            class="btn btn-secondary"
+                            @onclick="() => showDeletePopUp = false">Close</button>
+                    <button type="button" 
+                            class="btn btn-danger" 
+                            @onclick="(() => DeletePerson(idToDelete))">Delete Person</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    public List<IPersonModel> _people = new List<IPersonModel>();
+    
+    private string personToDelete;
+    private bool showEditForm = false;
+    private bool showDeletePopUp = false;
+    private int idToUpdate;
+    private int idToDelete;
+    private int tableWidth = 12;
+    private string? _searchTerm;
+
+    private void HandleOnUpdate(IPersonModel person)
+    {
+        showEditForm = false;
+        tableWidth = 12;
+        var personToUpdate = _people.FirstOrDefault(x => x.Id == person.Id);
+        if (personToUpdate is not null)
+        {
+            personToUpdate.FirstName = person.FirstName;
+            personToUpdate.LastName = person.LastName;
+            personToUpdate.DateOfBirth = person.DateOfBirth;
+        }
+    }
+
+    private async Task DeletePerson(int id)
+    {
+        await _dataService.DeletePerson(id);
+        var personToDelete = _people.FirstOrDefault(x => x.Id == id);
+        if (personToDelete is not null)
+        {
+            _people.Remove(personToDelete);
+        }
+        showDeletePopUp = false;
+    }
+
+    private void UpdatePerson(int id)
+    {
+        idToUpdate = id;
+        tableWidth = 8;
+        showEditForm = true;
+    }
+
+    private void HandleDeleteClick(int id)
+    {
+        personToDelete = _people.FirstOrDefault(x => x.Id == id).FirstName;
+        showDeletePopUp = true;
+        idToDelete = id;
+    }
+
+    private async Task DisplaySearchedPeople(string searchTerm)
+    {
+        _people = await _dataService.ReadPeople(searchTerm);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _people = await _dataService.ReadPeople();
+    }
+}
